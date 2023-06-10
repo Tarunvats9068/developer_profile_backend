@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Post = require("../models/Post");
 const authenticate = require("../middlewares/authenticate");
 
 /*
@@ -131,14 +132,21 @@ router.put("/follow/:id",authenticate,async (req,res) =>
     let user_id  = req.params.id;
     let userID  = req.user.id;
    let us = await User.findOne({_id:user_id});
-   var isFollowing = us.Follower.includes(userID);
-    var option = isFollowing ? "$pull" : "$addToSet";
+   let us1 = await User.findOne({_id:userID});
+   var isFollower = us.Follower.includes(userID);
+   var isFollowing = us1.Following.includes(user_id);
+    var option =  isFollower ? "$pull" : "$addToSet";
+    var options = isFollowing ? "$pull" : "$addToSet";
     // Insert/delete post like
     let follow = await User.findOneAndUpdate(
       { _id: user_id},
-      { [option]: { Follower: userID } },
-      { new: true }
-    )
+      { [option]: { Follower: userID }},
+      { new: true })
+      // console.log(follow);
+    let follow1 = await User.findOneAndUpdate(
+      { _id: userID},
+      { [options]: { Following: user_id }},
+      { new: true })
     res.status(200).json({msg:"done"});
   }  catch (error) {
     // console.error(error);
@@ -146,4 +154,20 @@ router.put("/follow/:id",authenticate,async (req,res) =>
   }
    
 })
+
+router.get("/followpt",authenticate,async (req,res)=>{
+  try{
+   let us = req.user;
+  //  console.log(us);
+   let posts  = await Post.find({});
+   let users  = await User.findOne({_id:us.id});
+   res.status(200).json({post:posts,
+  user:users.Following});
+  } catch(error)
+  {
+   console.log(error)
+   res.status(500).json({ errors: [{ msg: error.message }] });  
+  }
+   
+});
 module.exports = router;
